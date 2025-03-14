@@ -24,12 +24,8 @@ class game:
             print()# coloca newline
         return
 
-    """joga um turno"""
-    def playOneTurn(self): #joga um turno
-        pass
-
-    """coloca a peça na board e atualiza ela"""
-    def putGamePiece(self): 
+    """joga um turno e atualiza a board"""
+    def playOneTurn(collumn, player): #joga um turno
         pass
 
     """Verifica se um determinado estado é um estado final"""
