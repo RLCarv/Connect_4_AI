@@ -1,0 +1,5 @@
+NUM_ROW = 6
+NUM_COL = 7
+EMPTY = "-"
+PLAYER_1_PIECE = "X"
+PLAYER_2_PIECE = "O"
