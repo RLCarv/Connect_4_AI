@@ -10,13 +10,19 @@ class game:
         #variaveis iniciais
         self.first = PLAYER_1_PIECE #quem começa
         self.turn = 0 #contador do turno
-        self.game_winner = EMPTY #variavel que controla quem ganhou
-        self.board_is_full = False #retorna se a board esta cheia
-        pass
+        self.gameWinner = EMPTY #variavel que controla quem ganhou
+        self.boardIsFull = False #retorna se a board esta cheia
+        self.board = np.full([NUM_ROW, NUM_COL], EMPTY) #gera a board vazia
         
     """desenha a board"""
     def drawBoard(self):
-        pass
+        for i in range(7): print(i, end=" ") #imprime os numeros das colunas
+        print() # coloca newline
+        for line in self.board:
+            for piece in line:
+                print(piece, end=" ")
+            print()# coloca newline
+        return
 
     """joga um turno"""
     def playOneTurn(self): #joga um turno
