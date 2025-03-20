@@ -8,12 +8,12 @@ PLAYER_2_PIECE = "O"
 class game:
     def __init__(self):
         #variaveis iniciais
-        self.first = PLAYER_1_PIECE #quem começa
         self.turn = 0 #contador do turno
+        self.playerTurn = PLAYER_1_PIECE #quem começa
         self.gameWinner = EMPTY #variavel que controla quem ganhou
         self.boardIsFull = False #retorna se a board esta cheia
         self.board = np.full([NUM_ROW, NUM_COL], EMPTY) #gera a board vazia
-        self.tops = [0] * NUM_COL
+        self.tops = [0] * NUM_COL #array unidimensional que guarda quantas peças em cada coluna
 
     """desenha a board"""
     def drawBoard(self):
@@ -25,16 +25,20 @@ class game:
             print()# coloca newline
         return
 
+    """verifica se a coluna está disponível"""
     def verifyCol(self, col):
     #a coluna está disponível se o tamanho da pilha for menor que o total das linha 
-        return self.tops[col] < NUM_ROW  
+        if col >= NUM_COL or col < 0: # error handling quando a coluna não existe
+            return False
+        else:
+            return self.tops[col] < NUM_ROW
     
     """joga um turno"""
     def playOneTurn(self, col, piece): #joga um turno onde trata cada col como uma pilha
-        if not self.verifyColumn(col):
+        if not self.verifyCol(col): #error handling ^2
             return False  # Col não está cheia
         
-        #Coloca a coluna ceta desde a base usando lógica da pilha
+        # Coloca a coluna certa desde a base usando lógica da pilha
         row_to_place = NUM_ROW - 1 - self.tops[col]
         
         # Coloca a peça 
@@ -43,11 +47,8 @@ class game:
         # Adiciona ao contador da pilha nessa coluna
         self.tops[col] += 1
         return True
-
-    """coloca a peça na board e atualiza ela"""
-    def putGamePiece(self): 
-        pass
     
     """verifica se um determinado estado é um estado final"""
     def gameOver(self):
+        #retorna um boolean e altera o valor da variavel gameWinner
         pass
