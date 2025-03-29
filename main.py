@@ -56,7 +56,6 @@ while NEW_GAME:
         newGame.drawBoard()
         playerMove(newGame.playerTurn)
 
-        print(f"\n\n\n{newGame.tops}\n\n\n\n")
         if newGame.gameOver(): # caso o jogo acabe
             if newGame.gameWinner == "Tie": # empate
                 newGame.drawBoard()

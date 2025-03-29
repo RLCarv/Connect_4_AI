@@ -27,7 +27,7 @@ class game:
 
     """verifica se a coluna está disponível"""
     def verifyCol(self, col):
-    #a coluna está disponível se o tamanho da pilha for menor que o total das linha 
+    #a coluna está disponível se o tamanho da pilha for menor que o total das linha
         if col >= NUM_COL or col < 0: # error handling quando a coluna não existe
             return False
         else:
