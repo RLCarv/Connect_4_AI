@@ -51,4 +51,31 @@ class game:
     """verifica se um determinado estado é um estado final"""
     def gameOver(self):
         #retorna um boolean e altera o valor da variavel gameWinner
-        pass
+        for i in range(NUM_ROW):
+            for j in range(NUM_COL):
+                #verifica se a peça é X ou O
+                piece = self.board[i, j]
+                if piece == EMPTY:  
+                    continue 
+                #verifica em linha horizontal 
+                if j <= NUM_COL - 4 and all(self.board[i, j + k] == piece for k in range(4)):
+                    self.gameWinner = piece
+                    return True
+                #verifica em linha vertical 
+                if i <= NUM_ROW - 4 and all(self.board[i + k, j] == piece for k in range(4)):
+                    self.gameWinner = piece
+                    return True
+                #verifica a diagonal principal
+                if i <= NUM_ROW - 4 and j <= NUM_COL - 4 and all(self.board[i + k, j + k] == piece for k in range(4)):
+                    self.gameWinner = piece
+                    return True
+                #verifica a diagonal secundaria
+                if i <= NUM_ROW - 4 and j >= 3 and all(self.board[i + k, j - k] == piece for k in range(4)):
+                    self.gameWinner = piece
+                    return True
+        #verifica empate
+        if all(not self.verifyCol(i) for i in range(NUM_COL)):  
+            self.gameWinner = "Tie"
+            return True
+
+        return False
