@@ -1,9 +1,10 @@
 from game_logic import *
+from ai_random import *
 
 NEW_GAME = True
 
-def playerMove(piece): #movimento do jogador
-    print(f"Next to play: {piece}")
+def playerMove(piece): # movimento do jogador
+    print(f"Next to play: Player as {piece}")
     try:  # error handling
         col = int(
             input("Choose in which col do you wanna play or press 9 to quit: ")
@@ -24,6 +25,40 @@ def playerMove(piece): #movimento do jogador
             col = -1
     newGame.playOneTurn(col,piece)
 
+def aiMove(piece): # movimento da AI
+    print(f"Next to play: {aiName} as {piece}")
+    col = ai.getMove(newGame)
+    print(f"{aiName} played in col: {col}")
+    newGame.playOneTurn(col,piece)
+
+def gameMode(): # seleciona o modo de jogo e inicializa a AI
+    start = -1 # error handling
+    while start not in range(2):
+        try:  
+            start = int(input("\nChoose the Game Mode\n0 => Player vs Player\n1 => AI Random\n2 => Monte Carlo\n: "))
+        except:
+            continue
+    match start:
+        case 0:
+            ai = None
+            aiName = None
+        case 1:
+            ai = ai_random()
+            aiName = "Random"
+        #case 2:
+        #    ai = ai_MonteCarlo()
+        #    aiName = "Monte Carlo"
+    return ai,aiName
+
+def PlayOrder(): #decide quem vai primeiro
+    try:  # error handling
+        first = int(input("\nChoose 0 to go first or 1 to go second: "))
+    except:
+        first = -1
+    if first not in range(2):
+        PlayOrder()
+    return first
+
 def requestNewGame():
     bol = -1
     while bol < 0 or bol > 1:
@@ -37,20 +72,44 @@ def requestNewGame():
 # GAME LOOP
 while NEW_GAME:
     print("\nNew Game")
-    newGame = game() #gera um novo jogo
-    newGame.gameWinner = EMPTY #reseta o vencedor
-    newGame.turn = 0 #reseta o turno 0
+    newGame = game() # gera um novo objeto jogo
+    
+    start = gameMode() # seleciona o modo de jogo
+    ai = start[0] # inicializa a AI
+    aiName = start[1]
+
+    if aiName != None:
+        order = PlayOrder() # seleciona se começa ou não    
+    else: 
+        order = -1 # pvp não tem quem começa
 
     while newGame.gameWinner == EMPTY: #game loop
-        #controla de quem é a vez
-        if newGame.turn % 2 == 0:
-            newGame.playerTurn = PLAYER_1_PIECE
-        else:
-            newGame.playerTurn = PLAYER_2_PIECE
-
         print(f"\nTurn: {newGame.turn}")
         newGame.drawBoard()
-        playerMove(newGame.playerTurn)
+        
+
+        if order == -1: # controla de quem é a vez e faz o movimento
+            if newGame.turn % 2 == 0:
+                newGame.playerTurn = PLAYER_1_PIECE
+                playerMove(newGame.playerTurn)
+            else:
+                newGame.playerTurn = PLAYER_2_PIECE
+                playerMove(newGame.playerTurn)
+        elif order == 0: # player joga primeiro
+            if newGame.turn % 2 == 0:
+                newGame.playerTurn = PLAYER_1_PIECE
+                playerMove(newGame.playerTurn)
+            else:
+                newGame.playerTurn = PLAYER_2_PIECE
+                aiMove(newGame.playerTurn)
+        else: # player joga segundo
+            if newGame.turn % 2 == 0:
+                newGame.playerTurn = PLAYER_1_PIECE
+                aiMove(newGame.playerTurn)
+            else:
+                newGame.playerTurn = PLAYER_2_PIECE
+                playerMove(newGame.playerTurn)
+
 
         if newGame.gameOver(): # caso o jogo acabe
             if newGame.gameWinner == "Tie": # empate

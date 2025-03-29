@@ -1,14 +1,12 @@
 from game_logic import *
+import random
 
 # Sempre faz um movimento Random
 class ai_random:
-    def __init__(self):
-        pass
-
-    def AIMove(self,state):
-        col = range(8)
+    def getMove(self, state):
+        col = random.randrange(NUM_COL)
         while not state.verifyCol(col):
-            col = range(8)
+            col = random.randrange(NUM_COL)
         return col
 
     
