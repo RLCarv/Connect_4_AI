@@ -1,5 +1,6 @@
 from game_logic import *
 from ai_random import *
+from ai_mcts import *
 
 NEW_GAME = True
 
@@ -25,15 +26,23 @@ def playerMove(piece): # movimento do jogador
             col = -1
     newGame.playOneTurn(col,piece)
 
+
 def aiMove(piece): # movimento da AI
     print(f"Next to play: {aiName} as {piece}")
-    col = ai.getMove(newGame)
+
+    if aiName == "Monte Carlo":
+        print("Thinking...")
+        col = ai.getMove(newGame)
+
+    else: 
+        col = ai.getMove(newGame)
+    
     print(f"{aiName} played in col: {col}")
     newGame.playOneTurn(col,piece)
 
 def gameMode(): # seleciona o modo de jogo e inicializa a AI
     start = -1 # error handling
-    while start not in range(2):
+    while start not in range(3):
         try:  
             start = int(input("\nChoose the Game Mode\n0 => Player vs Player\n1 => AI Random\n2 => Monte Carlo\n: "))
         except:
@@ -45,9 +54,9 @@ def gameMode(): # seleciona o modo de jogo e inicializa a AI
         case 1:
             ai = ai_random()
             aiName = "Random"
-        #case 2:
-        #    ai = ai_MonteCarlo()
-        #    aiName = "Monte Carlo"
+        case 2:
+            ai = MCTS()
+            aiName = "Monte Carlo"
     return ai,aiName
 
 def PlayOrder(): #decide quem vai primeiro
@@ -89,26 +98,17 @@ while NEW_GAME:
         
 
         if order == -1: # controla de quem é a vez e faz o movimento
-            if newGame.turn % 2 == 0:
-                newGame.playerTurn = PLAYER_1_PIECE
-                playerMove(newGame.playerTurn)
-            else:
-                newGame.playerTurn = PLAYER_2_PIECE
-                playerMove(newGame.playerTurn)
+                playerMove(newGame.player())
         elif order == 0: # player joga primeiro
             if newGame.turn % 2 == 0:
-                newGame.playerTurn = PLAYER_1_PIECE
-                playerMove(newGame.playerTurn)
+                playerMove(newGame.player())
             else:
-                newGame.playerTurn = PLAYER_2_PIECE
-                aiMove(newGame.playerTurn)
+                aiMove(newGame.player())
         else: # player joga segundo
             if newGame.turn % 2 == 0:
-                newGame.playerTurn = PLAYER_1_PIECE
-                aiMove(newGame.playerTurn)
+                aiMove(newGame.player())
             else:
-                newGame.playerTurn = PLAYER_2_PIECE
-                playerMove(newGame.playerTurn)
+                playerMove(newGame.player())
 
 
         if newGame.gameOver(): # caso o jogo acabe

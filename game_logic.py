@@ -7,13 +7,19 @@ PLAYER_2_PIECE = "O"
 
 class game:
     def __init__(self):
-        #variaveis iniciais
         self.turn = 0 #contador do turno
-        self.playerTurn = PLAYER_1_PIECE #quem começa
         self.gameWinner = EMPTY #variavel que controla quem ganhou
         self.boardIsFull = False #retorna se a board esta cheia
         self.board = np.full([NUM_ROW, NUM_COL], EMPTY) #gera a board vazia
         self.tops = [0] * NUM_COL #array unidimensional que guarda quantas peças em cada coluna
+        self.last_move = None #guarda o ultimo movimento p/ o MCTS
+
+    """diz de quem é a vez"""
+    def player(self):
+        if self.turn % 2 == 0:
+            return PLAYER_1_PIECE
+        else:
+            return PLAYER_2_PIECE
 
     """desenha a board"""
     def drawBoard(self):
@@ -25,13 +31,21 @@ class game:
             print()# coloca newline
         return
 
-    """verifica se a coluna está disponível"""
+    """verifica se uma coluna está disponível"""
     def verifyCol(self, col):
     #a coluna está disponível se o tamanho da pilha for menor que o total das linha
         if col >= NUM_COL or col < 0: # error handling quando a coluna não existe
             return False
         else:
             return self.tops[col] < NUM_ROW
+        
+    """lista de colunas disponíveis usada para o MTCS"""
+    def availableCollumns(self):
+        available = []
+        for i, value in enumerate(self.board[0]):
+            if value == EMPTY:
+                available.append(i)
+        return available
     
     """joga um turno"""
     def playOneTurn(self, col, piece): #joga um turno onde trata cada col como uma pilha
@@ -46,6 +60,10 @@ class game:
         
         # Adiciona ao contador da pilha nessa coluna
         self.tops[col] += 1
+
+        # atualiza o ultimo movimento (Usado no MCTS)
+        self.last_move = col
+
         return True
     
     """verifica se um determinado estado é um estado final"""
