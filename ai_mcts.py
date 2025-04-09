@@ -142,25 +142,25 @@ class MCTS:
     -- por algum motivo fazer de forma alternada é pior (???)
     isso não tem muito sentido pois ele soma a pontuação seja pos ou neg para
     ambos os players... ainda tenho que testar mais"""
-    def backpropagation(self, node, value):
-    #def backpropagation(self, node, winner):
 
-        #if winner == self.aiPiece: # se a ai vencer
-        #    value = 1
-        #else:
-        #    value = 0 # empate também retorna 0
+    
+    def backpropagation(self, node, value):
 
         while node != None: # node inicial tem valor None em parent
             node.value += value
             node.visits += 1
             node = node.parent
 
-            #if winner == "Tie": # no caso de empate fica 0 para tudo
-            #    value = 0
-            #else:
-            #    value = 1 - value # tem que alternar o valor entre cada node
-        return 
-    
+        return
 
 
+    def backpropagationAlt(self, node, value):
             
+        while node != None: # node inicial tem valor None em parent
+            node.value += value
+            node.visits += 1
+            node = node.parent
+
+            value = 1 - value # tem que alternar o valor entre cada node
+            
+        return
