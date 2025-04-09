@@ -57,6 +57,7 @@ class MCTS:
             nextNode = self.choose(node) # escolhe o próximo Node
             simValue = self.rollout(nextNode) # faz a simulação da partida e retorna o resultado
             self.backpropagation(nextNode, simValue) # faz a backpropagation até o node escolhido
+            #self.backpropagationAlt(nextNode, simValue)
             rolloutsCounter += 1 
     
         run_time = int(time.process_time() - start_time)
@@ -143,7 +144,6 @@ class MCTS:
     isso não tem muito sentido pois ele soma a pontuação seja pos ou neg para
     ambos os players... ainda tenho que testar mais"""
 
-    
     def backpropagation(self, node, value):
 
         while node != None: # node inicial tem valor None em parent
@@ -162,5 +162,5 @@ class MCTS:
             node = node.parent
 
             value = 1 - value # tem que alternar o valor entre cada node
-            
+
         return
