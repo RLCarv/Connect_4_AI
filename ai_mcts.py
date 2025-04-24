@@ -8,16 +8,17 @@ import time
 simulações aumenta consideravelmente com o passar do jogo"""
 
 MCTS_TIME = 5.0
+MAX_ITER = 50000
 
 """valor de C aleatório, no futuro testaremos diversos valores para definir
 qual o melhor balanço entre exploration e exploitation para este problema"""
 
-MCTS_C = 2.0
+MCTS_C = 7.0
 
 class Node:
 
     def __init__(self, state, parent=None):
-        self.visits = 1
+        self.visits = 0
         self.value = 0
         self.state = state
         self.parent = parent
@@ -45,6 +46,7 @@ class MCTS:
     """Função principal que retorna o movimento Final"""
     def getMove(self, state):
         self.aiPiece = state.player() # define a peça da AI
+        #print(f"\n{state.player()}")
 
         new_state = copy.deepcopy(state) #cria copias do estado inicial
         node = Node(copy.deepcopy(new_state))
@@ -53,11 +55,18 @@ class MCTS:
         rolloutsCounter = 0
         run_time = 0
 
+        """
         while time.process_time() - start_time < self.processing_time: # loop principal
             nextNode = self.choose(node) # escolhe o próximo Node
             simValue = self.rollout(nextNode) # faz a simulação da partida e retorna o resultado
             self.backpropagation(nextNode, simValue) # faz a backpropagation até o node escolhido
             #self.backpropagationAlt(nextNode, simValue)
+            rolloutsCounter += 1 """
+
+        for i in range(MAX_ITER):  # loop principal
+            nextNode = self.choose(node) # escolhe o próximo Node
+            simValue = self.rollout(nextNode) # faz a simulação da partida e retorna o resultado
+            self.backpropagationAlt(nextNode, simValue) # faz a backpropagation até o node escolhido
             rolloutsCounter += 1 
     
         run_time = int(time.process_time() - start_time)
@@ -105,17 +114,22 @@ class MCTS:
     """expande o nó escolhido"""
     def expand(self, node):
         possible_actions = node.state.availableCollumns() # lista de ações possíveis
+        #print(f"\npossible: {possible_actions}")
+        #print(f"\n available: {node.state.availableCollumns()}")
         notTaken = [] # lista de ações não tomadas
 
         for action in possible_actions:
             if action not in node.children_move:
                 notTaken.append(action)
-        
+        #print(f"\nnot taken: {notTaken}")
         action = random.choice(notTaken)
 
         new = copy.deepcopy(node.state)
+        
+        #print(f"\nnext expand\: {new.player()}")
         new.playOneTurn(action,new.player())
         new.turn += 1
+        #print(f"{new.drawBoard()}")
 
         node.add_child(Node(new), action)
         return node.children[-1]
@@ -129,15 +143,24 @@ class MCTS:
             possible_actions = new.availableCollumns()
 
             if len(possible_actions) > 0:
+                #print(f"\nnext: {new.player()}")
                 new.playOneTurn(random.choice(possible_actions), new.player())
                 new.turn += 1
-        
+                #print(f"{new.drawBoard()}")
         #return new.gameWinner
+
+        #new.turn += 1
+        #print(f"\nfinal {new.player()}")
+        #print(f"winner: {new.gameWinner}")
+        #print(f"ai: {self.aiPiece}")
+        #print(f"{new.drawBoard()}")
 
         if new.gameWinner == self.aiPiece: # se a ai vencer
             return 1
+        elif new.gameWinner != self.aiPiece:
+            return 0 # derrota da ai
         else:
-            return 0 # empate também retorna 0
+            return -1 # empate
 
     """faz a backpropagation
     -- por algum motivo fazer de forma alternada é pior (???)
@@ -155,12 +178,26 @@ class MCTS:
 
 
     def backpropagationAlt(self, node, value):
-            
-        while node != None: # node inicial tem valor None em parent
-            node.value += value
-            node.visits += 1
-            node = node.parent
+        node.state.turn +=1
+        #print("\n\nbackprop:\n")
+        #print(f"value: {value}; winner: {node.state.player()}; turn: {node.state.turn} ")
 
-            value = 1 - value # tem que alternar o valor entre cada node
+        if value == -1: # empate
+            while node != None:
+                node.visits += 1
+                node = node.parent
 
-        return
+        elif value == 0: # derrota
+            while node != None:
+                node.value += value
+                node.visits += 1
+                #print(f"{node.value}; {node.state.player()} ")
+                node = node.parent
+                value = 1 - value
+
+        else: # vitória
+            while node != None:
+                node.value += value
+                node.visits += 1
+                #print(f"{node.value}; {node.state.player()} ")
+                node = node.parent

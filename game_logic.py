@@ -30,7 +30,7 @@ class game:
                 print(piece, end=" ")
             print()# coloca newline
         return
-
+    
     """verifica se uma coluna está disponível"""
     def verifyCol(self, col):
     #a coluna está disponível se o tamanho da pilha for menor que o total das linha
