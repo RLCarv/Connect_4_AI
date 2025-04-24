@@ -113,9 +113,11 @@ while NEW_GAME:
 
         if newGame.gameOver(): # caso o jogo acabe
             if newGame.gameWinner == "Tie": # empate
+                print("\n")
                 newGame.drawBoard()
                 print(f"\nIt's a Tie!")
             else: # vitória
+                print("\n")
                 newGame.drawBoard()
                 print(f"\n{newGame.gameWinner} Won!")    
             NEW_GAME = requestNewGame() # define se haverá outro jogo

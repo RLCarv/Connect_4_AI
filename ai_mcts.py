@@ -8,7 +8,7 @@ import time
 simulações aumenta consideravelmente com o passar do jogo"""
 
 MCTS_TIME = 5.0
-MAX_ITER = 50000
+MAX_ITER = 5000
 
 """valor de C aleatório, no futuro testaremos diversos valores para definir
 qual o melhor balanço entre exploration e exploitation para este problema"""
@@ -46,95 +46,92 @@ class MCTS:
     """Função principal que retorna o movimento Final"""
     def getMove(self, state):
         self.aiPiece = state.player() # define a peça da AI
-        #print(f"\n{state.player()}")
 
-        new_state = copy.deepcopy(state) #cria copias do estado inicial
+        new_state = copy.deepcopy(state) # cria copias do estado inicial
         node = Node(copy.deepcopy(new_state))
 
-        start_time = time.process_time()
-        rolloutsCounter = 0
+        start_time = time.process_time() # começa o timer do jogo
+        iterations = 0
         run_time = 0
-
-        """
-        while time.process_time() - start_time < self.processing_time: # loop principal
+        
+        # o loop continuar até o tempo acabar ou a quantidade máxima de iterações
+        #while time.process_time() - start_time < self.processing_time:
+        while iterations < MAX_ITER:
             nextNode = self.choose(node) # escolhe o próximo Node
-            simValue = self.rollout(nextNode) # faz a simulação da partida e retorna o resultado
-            self.backpropagation(nextNode, simValue) # faz a backpropagation até o node escolhido
-            #self.backpropagationAlt(nextNode, simValue)
-            rolloutsCounter += 1 """
+            
+            if (nextNode[1]): # se o node for uma vitória imediata, retorna esse node
+                return node.children[-1].state.last_move # os movimentos feitos são salvos em last move, então é só ir ao last move da ultima child adicionada
+            elif (nextNode[2]): # se o node do player for uma vitória imediata, retorna esse node, bloqueando o player
+                return node.children[-1].state.last_move
 
-        for i in range(MAX_ITER):  # loop principal
-            nextNode = self.choose(node) # escolhe o próximo Node
-            simValue = self.rollout(nextNode) # faz a simulação da partida e retorna o resultado
-            self.backpropagationAlt(nextNode, simValue) # faz a backpropagation até o node escolhido
-            rolloutsCounter += 1 
+            simValue = self.rollout(nextNode[0]) # faz a simulação da partida e retorna o resultado
+            self.backpropagation(nextNode[0], simValue) # faz a backpropagation até a child escolhida
+            iterations += 1
     
         run_time = int(time.process_time() - start_time)
         
-        """retorna a child com a maior razão entre vitórias e números de visitas, no entanto não
-        leva em conta quem tem o maior valor de visitas, isso é: uma child com 1/1 seria escolhido
-        ao invés de uma com 99/100"""
+        """Retorna a child com a maior razão entre vitórias e números de visitas"""
         melhorValor = float('-inf')
-        for child in node.children: # itera sobre todas as children
+        for child in node.children: # itera sobre todas as children e escolhe a com melhor razão
             if child.visits == 0: # eliminar children que não foram visitadas, apesar de ser pouco provável
                 continue
             elif child.value/child.visits > melhorValor:
                 melhorValor = child.value/child.visits
                 melhorChild = child
-            print(f"---> move: {child.state.last_move} value: {child.value} visits:{child.visits} ratio: {child.value/child.visits}")
-        print(f"{rolloutsCounter} simulations in {run_time} seconds")
+            print(f"---> move: {child.state.last_move} value: {child.value} visits:{child.visits} ratio: {child.value/child.visits}") # estatísticas
+        print(f"{iterations} iterations in {run_time} seconds")
         
-        # toda vez que um movimento é feito ele é salvo em last move, então é só ir ao lastmove da melhor child
-        return melhorChild.state.last_move 
+        return melhorChild.state.last_move # toda vez que um movimento é feito ele é salvo em last move, então é só ir ao lastmove da melhor child
 
-    """Seleciona o próximo node para fazer rollout"""
-    def choose(self, node):
-        while not node.state.gameOver():
-            if not node.full_explored():
-                return self.expand (node)
-            else:
-                node = self.bestChild(node)
+    """Seleciona o próximo node para fazer rollout, retorna o node,True/False que diz se a proxima jogada é vitória imediata"""
+    def choose(self, node):  
+        if not node.full_explored(): # se todas as children do node não foram exploradas, retorna uma delas
+            return self.expand(node)
+        else: # se todas foram exploradas uma vez, retorna a melhor de acordo com UCBT
+            node = self.bestChild(node) 
         return node
     
-    """Calcula a UCBT para cada child e retorna a melhor"""
+    """expande o nó inicial"""
+    def expand(self, node):
+        possible_actions = node.state.availableCollumns() # lista de ações possíveis
+        notTaken = [] # lista de ações não tomadas
+
+        for action in possible_actions: 
+            if action not in node.children_move: # children_move lista as ações já tomadas
+                notTaken.append(action)
+
+        action = random.choice(notTaken) # escolhe aleatóriamente uma ação não tomada
+
+        newchild = copy.deepcopy(node.state) # gera uma nova child baseado nas ações não tomadas
+        newchild.playOneTurn(action,newchild.player()) # faz essa jogadaa
+        newchild.turn += 1
+        immediateAIWin = newchild.gameOver() # verifica se a AI vai ganhar nessa jogada
+
+        testplayer = copy.deepcopy(node.state) # gera uma child teste que joga como o player e sera descartada
+        testplayer.turn += 1 # incrementa o turno, jogando como o player
+        testplayer.playOneTurn(action,testplayer.player()) # faz essa jogada como o player
+        immediatePlayerWin = testplayer.gameOver()
+
+        node.add_child(Node(newchild), action) # adiciona ao node inicial essa nova child
+        return node.children[-1],immediateAIWin,immediatePlayerWin # retorna essa child para fazer o rollout e se ela é uma vitória imediata
+    
+    """Calcula a UCBT para cada child e retorna a melhor,
+    o False serve para manter o output da função choose consistente e não altera nada em bestChild"""
     def bestChild(self, node):
         bestScore = float('-inf')
         bestChild = []
 
         for child in node.children:
-            score = child.value/child.visits + self.exploring_rate * math.sqrt(2*math.log(node.visits)/child.visits) #UCBT
+            score = child.value/child.visits + self.exploring_rate * math.sqrt(2*math.log(node.visits)/child.visits) # UCBT
             if score == bestScore:
                 bestChild.append(child)
             if score > bestScore:
                 bestChild = [child]
                 bestScore = score
 
-        return random.choice(bestChild) # escolhe aleatóriamente entre as que tem o maior valor
+        return random.choice(bestChild), False, False # escolhe aleatóriamente entre as que tem o maior valor
     
-    """expande o nó escolhido"""
-    def expand(self, node):
-        possible_actions = node.state.availableCollumns() # lista de ações possíveis
-        #print(f"\npossible: {possible_actions}")
-        #print(f"\n available: {node.state.availableCollumns()}")
-        notTaken = [] # lista de ações não tomadas
-
-        for action in possible_actions:
-            if action not in node.children_move:
-                notTaken.append(action)
-        #print(f"\nnot taken: {notTaken}")
-        action = random.choice(notTaken)
-
-        new = copy.deepcopy(node.state)
-        
-        #print(f"\nnext expand\: {new.player()}")
-        new.playOneTurn(action,new.player())
-        new.turn += 1
-        #print(f"{new.drawBoard()}")
-
-        node.add_child(Node(new), action)
-        return node.children[-1]
-    
-    """realiza as simulações com jogadas aleatórias"""
+    """Realiza as simulações com jogadas aleatórias"""
     def rollout(self, node):
         new = node.state
 
@@ -143,17 +140,8 @@ class MCTS:
             possible_actions = new.availableCollumns()
 
             if len(possible_actions) > 0:
-                #print(f"\nnext: {new.player()}")
                 new.playOneTurn(random.choice(possible_actions), new.player())
                 new.turn += 1
-                #print(f"{new.drawBoard()}")
-        #return new.gameWinner
-
-        #new.turn += 1
-        #print(f"\nfinal {new.player()}")
-        #print(f"winner: {new.gameWinner}")
-        #print(f"ai: {self.aiPiece}")
-        #print(f"{new.drawBoard()}")
 
         if new.gameWinner == self.aiPiece: # se a ai vencer
             return 1
@@ -162,25 +150,9 @@ class MCTS:
         else:
             return -1 # empate
 
-    """faz a backpropagation
-    -- por algum motivo fazer de forma alternada é pior (???)
-    isso não tem muito sentido pois ele soma a pontuação seja pos ou neg para
-    ambos os players... ainda tenho que testar mais"""
-
+    """Faz a backpropagation"""
     def backpropagation(self, node, value):
-
-        while node != None: # node inicial tem valor None em parent
-            node.value += value
-            node.visits += 1
-            node = node.parent
-
-        return
-
-
-    def backpropagationAlt(self, node, value):
-        node.state.turn +=1
-        #print("\n\nbackprop:\n")
-        #print(f"value: {value}; winner: {node.state.player()}; turn: {node.state.turn} ")
+        #node.state.turn +=1
 
         if value == -1: # empate
             while node != None:
@@ -201,3 +173,12 @@ class MCTS:
                 node.visits += 1
                 #print(f"{node.value}; {node.state.player()} ")
                 node = node.parent
+
+    """def backpropagationOld(self, node, value):
+
+        while node != None: # node inicial tem valor None em parent
+            node.value += value
+            node.visits += 1
+            node = node.parent
+
+        return"""
