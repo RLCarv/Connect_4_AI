@@ -9,7 +9,7 @@ random.seed(0)
 
 # --- Treinar/testar split ---
 
-#função de separação dos dados de treino e de teste
+#função de separação dos dados de treino e de teste:
 def train_test_split(df, test_size):
     if isinstance(test_size, float): #vê se o test_size é percentagem ou a qtd de linhas
         test_size = round(test_size * len(df))
@@ -22,9 +22,15 @@ def train_test_split(df, test_size):
     
     return train_df, test_df
 
-#leitura e separação dos dados
+#leitura e separação dos dados:
 df = pd.read_csv("iris.csv")
 train_df, test_df = train_test_split(df, test_size=0.3) #usa 30% como exemplo
+
+#Se coluna for numinal:
+def is_categorical_col(col, max_unique=10):
+    if col.dtype.kind in {"U", "S", "O"}:
+        return True
+    return np.unique(col).size <= max_unique
 
 #calcula a entropia de um dataset
 def entropy(database):
@@ -44,6 +50,11 @@ def information_gain(database, atribute_index):
         weighted_entropy += (len(subset) / len(database)) * entropy(subset)
 
     return total_entropy - weighted_entropy
+
+#calculaa information gain dado uma lista de subconjuntos:
+def info_gain_from_subsets(subsets, parent_entropy, parent_len):
+    weighted = sum((len(s) / parent_len) * entropy(s) for s in subsets)
+    return parent_entropy - weighted
 
 #retorna o melhor theshold para um dado atribuuto
 def best_split(database,index):
@@ -68,58 +79,116 @@ def best_split(database,index):
                 bestthresh = thresh
     return bestgain, bestthresh
 
-#encontra o atributo com maior information gain
+#encontra o atributo com maior information gain:
 def best_attribute(database, attribute_indices):
+    parent_entropy = entropy(database) #calcula entropia do conjunto completo de classes do nó pai,ou seja, valor de partida
     bestgain = -1
+    best_attribute  = None #indice do attr 
+    best_thresh = None #caso contínuo
+    best_cat = False #flag do cat
 
-    for i in attribute_indices:
+    for i in attribute_indices: #loop para encontrar o que gera maior redução de incerteza
+        col = database[:,i] #valores do atributo avaliado
+
+        #---categórico(multi-ramo)---
+        if is_categorical_col(col):
+            values = np.unique(col) #todos possíveis
+            subsets = [database[col == v] for v in values] #subconjunto para cada valor
+            gain = info_gain_from_subsets(subsets, parent_entropy, len(database))
+            if gain > bestgain:
+                bestgain = gain
+                best_attribute  = i
+                best_thresh = None
+                best_cat = True
+            continue
+
+        #---contínuo(binário)---
         gain, thresh = best_split(database, i)
         if gain > bestgain:
             bestgain = gain
             best_attribute = i
-            bestthresh = thresh
-    return best_attribute, bestthresh
+            best_thresh = thresh
+            best_cat = False 
+
+    return best_attribute, best_thresh, best_cat
 
 #descobre atributo mais frequente 
 def majority_atribute(data):
-    #column_label = data[:,-1]
-    atribute = [row[-1] for row in data]  
-    return Counter(atribute).most_common(1)[0][0]
+    attributes = data[:,-1]
+    return Counter(attributes).most_common(1)[0][0]
 
 #cria a decision tree
 def id3(data, attribute_indices, attribute_names):
-    tipos = data[:, -1] #ultima coluna
+    # ---base case
     
+    types = data[:, -1] #ultima coluna
     #caso todos os atributos forem iguais
-    if np.all(tipos == tipos[0]):
-        return tipos[0]
-    
+    if np.all(types == types[0]):
+        return types[0]
     #se não houver mais atributos para fazer split
     if not attribute_indices:
         return majority_atribute(data)
+    
+    best, p, is_cat = best_attribute(data, attribute_indices)
+    
+    #---split categórico---
+    if is_cat:
+        tree = {f"{attribute_names[best]} =": {}}
+        col = data[:,best]  
+        values = np.unique(col)
 
-    best , thresh = best_attribute(data, attribute_indices) #melhor atributo para fazer split e o threshold desse split
-    if thresh is None:
+        for v in values: #cria um ramo para cada valor
+            subset = data[col == v]
+            new_idx = [i for i in attribute_indices if i != best]  #remove atributo usado
+            tree[f"{attribute_names[best]} ="][str(v)] = id3(subset, new_idx, attribute_names)
+        return tree
+    
+    #---split contínuo(binário)---
+    thresh = p
+    if thresh is None: #flag se não encontrar
         return majority_atribute(data)
 
     #cria a arvore
-    tree = {f"{attribute_names[best]} <= {thresh:.2f}": {}}
     left = data[data[:, best].astype(float) <= thresh]
     right = data[data[:, best].astype(float) > thresh]
-    subtree_left = id3(left, attribute_indices, attribute_names)
+
+    subtree_left  = id3(left,  attribute_indices, attribute_names)
     subtree_right = id3(right, attribute_indices, attribute_names)
     
-    tree[f"{attribute_names[best]} <= {thresh:.2f}"]["yes"] = subtree_left
-    tree[f"{attribute_names[best]} <= {thresh:.2f}"]["no"] = subtree_right
+    node_name = f"{attribute_names[best]} <= {thresh:.2f}"
+    tree = {node_name: {"yes": subtree_left, "no": subtree_right}}
     return tree
  
+
+def majority_branches(branches):
+    types = []
+    for s in branches.values():
+        if isinstance(s, str):
+            types.append(s)
+        else:
+            types.append(majority_branches(s))
+    return Counter(types).most_common(1)[0][0]
 
 #dado um novo exemplo, classica-o
 def classify(example, tree):
     if isinstance(tree, str):
         return tree  # caso base: folha da árvore
+    
     # pega no atributo de decisão neste nível
     node = next(iter(tree))  
+
+    #---categórico(multi-ramo)---
+    if node.endswith(" ="):
+        attr = node[:-2].strip() #remove o " ="
+        branch = tree[node]
+        val = str(example[attr])
+
+        if val in branch:
+            return classify(example, branch[val])
+        #devolve classe majoritária nos ramos do nó de um valor nunca visto
+        return majority_branches(branch)
+    
+    #---contínuo(binário)---
     # separar o nome e o threshold
     attr_name, condition = node.split(" <= ")
     threshold = float(condition)
@@ -131,27 +200,15 @@ def classify(example, tree):
 
 
 # --- Training ID3 ---
-train_dataset = train_df.values.tolist() #linhas de df
+train_np = train_df.values #linhas de df
 attributes = list(train_df.columns[:-1]) #nome dos atributos
 attribute_indices = list(range(len(attributes))) #indices dos atributos
-tree = id3(train_dataset, attribute_indices, attributes) #constroi a arvore
-
-"""
-df = pd.read_csv("iris.csv")
-dataset = df.values.tolist()#linhas de df
-attributes = list(df.columns[:-1])#nome dos atributos
-attribute_indices = list(range(len(attributes)))#indices dos atributos
-tree = id3(dataset, attribute_indices, attributes)#constroi a arvore
-
-sample = { 'ID': 22, 'sepallength': 5.1, 'sepalwidth': 3.5, 'petallength': 1.4, 'petalwidth': 0.2}
-print("Prediction:", classify(sample, tree))
-"""
+tree = id3(train_np, attribute_indices, attributes) #constroi a arvore
 
 # --- Evaluation ---
-
-#avalia com dados de teste
-test_data = test_df.values.tolist()
 correct = 0
+#avalia com dados de teste
+test_data = test_df.values
 
 for row in test_data:
     sample = dict(zip(attributes, row[:-1]))
