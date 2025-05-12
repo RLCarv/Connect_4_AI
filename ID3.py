@@ -83,7 +83,7 @@ def best_attribute(database, attribute_indices):
         if is_categorical_col(col):
             values = np.unique(col) #todos possíveis
             subsets = [database[col == v] for v in values] #subconjunto para cada valor
-            gain = information_gain(subsets, parent_entropy, len(database))
+            gain = information_gain(database, subsets)
             if gain > bestgain:
                 bestgain = gain
                 best_attribute  = i
@@ -92,15 +92,9 @@ def best_attribute(database, attribute_indices):
             continue
 
         #---contínuo(binário)---
-        gain, thresh = best_split(database, i)
-
-        left  = database[database[:, idx].astype(float) <= thresh]
-        right = database[database[:, idx].astype(float) >  thresh]
-
-        gain = information_gain(database, [left, right])
-
-        if gain > bestgain:
-            bestgain = gain
+        gain_num, thresh = best_split(database, i)
+        if gain_num > bestgain:
+            bestgain = gain_num
             best_attribute = i
             best_thresh = thresh
             best_cat = False 
@@ -115,7 +109,6 @@ def majority_atribute(data):
 #cria a decision tree
 def id3(data, attribute_indices, attribute_names):
     # ---base case
-    
     types = data[:, -1] #ultima coluna
     #caso todos os atributos forem iguais
     if np.all(types == types[0]):
