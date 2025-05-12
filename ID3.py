@@ -39,22 +39,11 @@ def entropy(database):
     probs = counts / counts.sum()
     return -np.sum(probs * np.log2(probs + 1e-9))
 
-#calcula a information gain de cada atributo
-def information_gain(database, atribute_index):
-    total_entropy = entropy(database)
-    values = set(row[atribute_index] for row in database)
-    weighted_entropy = 0.0
- 
-    for value in values:
-        subset = [row for row in database if row[atribute_index] == value]
-        weighted_entropy += (len(subset) / len(database)) * entropy(subset)
-
-    return total_entropy - weighted_entropy
-
 #calculaa information gain dado uma lista de subconjuntos:
-def info_gain_from_subsets(subsets, parent_entropy, parent_len):
-    weighted = sum((len(s) / parent_len) * entropy(s) for s in subsets)
-    return parent_entropy - weighted
+def information_gain(parent, children):
+    total_parent = entropy(parent)
+    weighted_entropy = sum(len(c)/len(parent) * entropy(c) for c in children)
+    return total_parent - weighted_entropy
 
 #retorna o melhor theshold para um dado atribuuto
 def best_split(database,index):
@@ -94,7 +83,7 @@ def best_attribute(database, attribute_indices):
         if is_categorical_col(col):
             values = np.unique(col) #todos possíveis
             subsets = [database[col == v] for v in values] #subconjunto para cada valor
-            gain = info_gain_from_subsets(subsets, parent_entropy, len(database))
+            gain = information_gain(subsets, parent_entropy, len(database))
             if gain > bestgain:
                 bestgain = gain
                 best_attribute  = i
@@ -104,6 +93,12 @@ def best_attribute(database, attribute_indices):
 
         #---contínuo(binário)---
         gain, thresh = best_split(database, i)
+
+        left  = database[database[:, idx].astype(float) <= thresh]
+        right = database[database[:, idx].astype(float) >  thresh]
+
+        gain = information_gain(database, [left, right])
+
         if gain > bestgain:
             bestgain = gain
             best_attribute = i
@@ -196,8 +191,6 @@ def classify(example, tree):
     value = float(example[attr_name])
     branch = "yes" if value <= threshold else "no"
     return classify(example, tree[node][branch])
-
-
 
 # --- Training ID3 ---
 train_np = train_df.values #linhas de df
