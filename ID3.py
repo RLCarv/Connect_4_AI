@@ -66,8 +66,12 @@ def majority_atribute(data):
     return Counter(atribute).most_common(1)[0][0]
 
 #cria a decision tree
-def id3(data, attribute_indices, attribute_names):
+def id3(data, attribute_indices, attribute_names, min_sample, max_depth, counter):
     tipos = data[:, -1] #ultima coluna
+
+    #pre-prunning
+    if(len(data) < min_sample) or (counter == max_depth):
+        return majority_atribute(data)
     
     #caso todos os tipos forem iguais
     if np.all(tipos == tipos[0]):
@@ -84,8 +88,8 @@ def id3(data, attribute_indices, attribute_names):
     tree = {f"{attribute_names[best]} <= {thresh:.2f}": {}}
     left = data[data[:, best].astype(float) <= thresh]
     right = data[data[:, best].astype(float) > thresh]
-    subtree_left = id3(left, attribute_indices, attribute_names)
-    subtree_right = id3(right, attribute_indices, attribute_names)
+    subtree_left = id3(left, attribute_indices, attribute_names,min_sample, max_depth, counter+1)
+    subtree_right = id3(right, attribute_indices, attribute_names,min_sample, max_depth, counter+1)
     
     tree[f"{attribute_names[best]} <= {thresh:.2f}"]["yes"] = subtree_left
     tree[f"{attribute_names[best]} <= {thresh:.2f}"]["no"] = subtree_right
@@ -108,14 +112,16 @@ def classify(example, tree):
 
 
 
-
+min_sample = 6
+max_depth = 8
+counter = 0
 df = pd.read_csv("Connect_4_AI/iris.csv")
 df = df.drop(columns=["ID"])
 dataset = df.values#linhas de df
 attributes = list(df.columns[:-1])#nome dos atributos
 attribute_indices = list(range(len(attributes)))#indices dos atributos
-tree = id3(dataset, attribute_indices, attributes)#constroi a arvore
+tree = id3(dataset, attribute_indices, attributes, min_sample, max_depth, counter)#constroi a arvore
 
-sample = { 'ID': 5, 'sepallength': 7.0, 'sepalwidth': 3.2, 'petallength': 4.7, 'petalwidth': 1.4}
+sample = { 'ID': 5, 'sepallength': 7.7, 'sepalwidth': 3.3, 'petallength': 6.0, 'petalwidth': 2.6}
 print("Prediction:", classify(sample, tree))
 
