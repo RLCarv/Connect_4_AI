@@ -13,7 +13,7 @@ MAX_ITER = 5000
 """valor de C aleatório, no futuro testaremos diversos valores para definir
 qual o melhor balanço entre exploration e exploitation para este problema"""
 
-MCTS_C = 7.0
+MCTS_C = 2.0
 
 class Node:
 
@@ -39,12 +39,13 @@ class Node:
 
 
 class MCTS:
-    def __init__(self):
+    def __init__(self, c=MCTS_C, max_iterations=MAX_ITER):
         self.processing_time = MCTS_TIME
-        self.exploring_rate = MCTS_C
+        self.exploring_rate = c
+        self.max_iterations = max_iterations
 
     """Função principal que retorna o movimento Final"""
-    def getMove(self, state):
+    def getMove(self, state, statistics = True):
         self.aiPiece = state.player() # define a peça da AI
 
         new_state = copy.deepcopy(state) # cria copias do estado inicial
@@ -56,7 +57,7 @@ class MCTS:
         
         # o loop continuar até o tempo acabar ou a quantidade máxima de iterações
         #while time.process_time() - start_time < self.processing_time:
-        while iterations < MAX_ITER:
+        while iterations < self.max_iterations:
             nextNode = self.choose(node) # escolhe o próximo Node
             
             if (nextNode[1]): # se o node for uma vitória imediata, retorna esse node
@@ -78,8 +79,10 @@ class MCTS:
             elif child.value/child.visits > melhorValor:
                 melhorValor = child.value/child.visits
                 melhorChild = child
-            print(f"---> move: {child.state.last_move} value: {child.value} visits:{child.visits} ratio: {child.value/child.visits}") # estatísticas
-        print(f"{iterations} iterations in {run_time} seconds")
+            if statistics:
+                print(f"---> move: {child.state.last_move} value: {child.value} visits:{child.visits} ratio: {child.value/child.visits}") # estatísticas
+        if statistics:
+            print(f"{iterations} iterations in {run_time} seconds")
         
         return melhorChild.state.last_move # toda vez que um movimento é feito ele é salvo em last move, então é só ir ao lastmove da melhor child
 
