@@ -72,7 +72,7 @@ class game:
         for i in range(NUM_ROW):
             for j in range(NUM_COL):
                 #verifica se a peça é X ou O
-                piece = self.board[i, j]
+                piece = self.board[i, j] # type: ignore
                 if piece == EMPTY:  
                     continue 
                 #verifica em linha horizontal 
