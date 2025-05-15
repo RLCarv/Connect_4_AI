@@ -32,10 +32,10 @@ def aiMove(piece): # movimento da AI
 
     if aiName == "Monte Carlo":
         print("Thinking...")
-        col = ai.getMove(newGame)
+        col = ai.getMove(newGame) # type: ignore
 
     else: 
-        col = ai.getMove(newGame)
+        col = ai.getMove(newGame) # type: ignore
     
     print(f"{aiName} played in col: {col}")
     newGame.playOneTurn(col,piece)
