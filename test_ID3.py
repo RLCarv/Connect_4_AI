@@ -60,8 +60,8 @@ def gen_dataset(n_games: int, iterations: int = 500, c: float = 2.0) -> pd.DataF
     cols += ['result', 'game_id']
 
     df = pd.DataFrame(records, columns=cols)
-    df.to_csv('connect4_dataset.csv', index=False)
-    print(f"Dataset salvo em 'connect4_dataset.csv' com {len(df)} linhas.")
+    df.to_csv('connect4_dataset2.csv', index=False)
+    print(f"Dataset salvo em 'connect4_dataset2.csv' com {len(df)} linhas.")
     return df    
 
 def main():
