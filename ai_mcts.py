@@ -51,7 +51,6 @@ class MCTS:
         new_state = copy.deepcopy(state) # cria copias do estado inicial
         node = Node(copy.deepcopy(new_state))
 
-        self.root = node 
         start_time = time.process_time() # começa o timer do jogo
         iterations = 0
         run_time = 0
